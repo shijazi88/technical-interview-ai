@@ -112,9 +112,15 @@ class TechnicalInterviewDataset:
         for i in range(num_scenarios):
             scenario_start = time.time()
             
+            # Show immediate feedback
+            print(f"🔄 Starting scenario {i + 1}/{num_scenarios}...", end=" ", flush=True)
+            
             # Generate the scenario
             scenario = self._generate_single_interview()
             scenarios.extend(scenario)
+            
+            # Show completion
+            print(f"✅ Done ({len(scenario)} examples)", flush=True)
             
             # Calculate timing
             scenario_time = time.time() - scenario_start
@@ -184,20 +190,36 @@ class TechnicalInterviewDataset:
         
         # Start with fundamentals
         current_category = QuestionCategory.FUNDAMENTALS
+        categories_tried = set()
+        no_questions_count = 0  # Safety counter to prevent infinite loops
         
         while questions_asked < max_questions:
-            # Get appropriate questions
-            candidate_questions = self.questions_db.get_questions_by_criteria(
-                language=language,
-                experience_level=experience,
-                category=current_category,
-                max_difficulty=self.context_manager.current_difficulty + 2
+            # Safety check to prevent infinite loops
+            if no_questions_count > 20:  # If we've tried 20 times without finding questions
+                print(f"⚠️ Warning: Could not find enough questions for {language.value} {experience.value}")
+                break
+                
+            # Get appropriate questions with gradually relaxed criteria
+            candidate_questions = self._get_questions_with_fallback(
+                language, experience, current_category, no_questions_count
             )
             
             if not candidate_questions:
+                no_questions_count += 1
+                categories_tried.add(current_category)
+                
                 # Try different category if no questions found
-                current_category = random.choice(list(QuestionCategory))
+                remaining_categories = set(QuestionCategory) - categories_tried
+                if remaining_categories:
+                    current_category = random.choice(list(remaining_categories))
+                else:
+                    # Reset and try any category again with more relaxed criteria
+                    categories_tried.clear()
+                    current_category = random.choice(list(QuestionCategory))
                 continue
+            
+            # Reset counter since we found questions
+            no_questions_count = 0
             
             # Select question
             question = random.choice(candidate_questions)
@@ -234,6 +256,45 @@ class TechnicalInterviewDataset:
                 ])
         
         return interview_exchanges
+    
+    def _get_questions_with_fallback(self, language: ProgrammingLanguage, 
+                                   experience: ExperienceLevel, 
+                                   category: QuestionCategory,
+                                   attempt_number: int) -> List[TechnicalQuestion]:
+        """Get questions with progressively relaxed criteria to prevent infinite loops"""
+        
+        # First few attempts: strict criteria
+        if attempt_number < 5:
+            return self.questions_db.get_questions_by_criteria(
+                language=language,
+                experience_level=experience,
+                category=category,
+                max_difficulty=self.context_manager.current_difficulty + 2
+            )
+        
+        # Next attempts: relax difficulty constraint
+        elif attempt_number < 10:
+            return self.questions_db.get_questions_by_criteria(
+                language=language,
+                experience_level=experience,
+                category=category
+                # No max_difficulty constraint
+            )
+        
+        # Next attempts: relax experience level
+        elif attempt_number < 15:
+            return self.questions_db.get_questions_by_criteria(
+                language=language,
+                category=category
+                # No experience_level constraint
+            )
+        
+        # Final attempts: only match language
+        else:
+            return self.questions_db.get_questions_by_criteria(
+                language=language
+                # Only language constraint
+            )
     
     def _generate_candidate_response(self, question: TechnicalQuestion, 
                                    experience: ExperienceLevel) -> str:

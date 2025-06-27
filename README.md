@@ -25,7 +25,14 @@ This AI can conduct technical interviews for:
 git clone https://github.com/shijazi88/technical-interview-ai
 cd technical-interview-ai
 
-# Train your AI (on Colab Pro GPU)
+# First: Test data generation (recommended)
+python test_data_generation.py
+
+# Then: Train your AI (on Colab Pro GPU)
+# Start small for testing
+python colab_training_pipeline.py --num_scenarios 20 --epochs 2
+
+# Scale up after confirming it works
 python colab_training_pipeline.py --num_scenarios 150 --epochs 3
 ```
 

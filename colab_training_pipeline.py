@@ -49,7 +49,7 @@ def main():
     
     parser = argparse.ArgumentParser(description="Train Technical Interview LLM on Google Colab")
     parser.add_argument("--model_name", type=str, default="codellama/CodeLlama-7b-Instruct-hf", help="Base model to use")
-    parser.add_argument("--num_scenarios", type=int, default=150, help="Number of training scenarios")
+    parser.add_argument("--num_scenarios", type=int, default=20, help="Number of training scenarios")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=1, help="Training batch size (keep small for Colab)")
     parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate (reduced for larger model)")
