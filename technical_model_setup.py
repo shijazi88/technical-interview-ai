@@ -3,15 +3,21 @@ from transformers import (
     AutoTokenizer, 
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling
+    DataCollatorForLanguageModeling,
+    BitsAndBytesConfig
 )
-from peft import LoraConfig, get_peft_model, TaskType
+from peft import LoraConfig, get_peft_model, TaskType, prepare_model_for_kbit_training
 import torch
 from torch.utils.data import Dataset
 import json
 from typing import Dict, List
 import gc
 import os
+try:
+    import bitsandbytes as bnb
+except ImportError:
+    print("⚠️ bitsandbytes not available, proceeding without quantization")
+    bnb = None
 from training_progress_tracker import TrainingProgressTracker, ProgressTrainerCallback
 
 class TechnicalInterviewTokenizer:
@@ -67,18 +73,19 @@ class TechnicalInterviewTokenizer:
                                experience_level: str,
                                category: str,
                                context: str = "") -> str:
-        """Create standardized prompt format for technical interviews"""
+        """Create standardized prompt format for technical interviews (memory-optimized)"""
         
-        prompt = f"""<|{language}|><|{experience_level}|><|{category}|>
-<|context|>{context}
+        prompt = f"""Technical Interview: {language.title()} - {experience_level.title()} Level
+Category: {category.title()}
+Context: {context}
 
-<|interviewer|><|question|>
+Interviewer Question:
 {question}
 
-<|candidate|><|response|>
+Candidate Response:
 {candidate_response}
 
-<|interviewer|><|follow_up|>"""
+Interviewer Follow-up:"""
         
         return prompt
 
@@ -330,23 +337,43 @@ def setup_technical_interview_training(
     
     print(f"✅ Generated {len(training_data)} training examples")
     
-    # 2. Load base model
+    # 2. Load base model with maximum memory efficiency
     print(f"\n🤖 Step 2: Loading base model: {model_name}")
+    
+    # Set memory optimization environment variables
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+    
+    # Clear all memory before loading
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+    gc.collect()
+    
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True,
         low_cpu_mem_usage=True,  # More efficient loading for large models
-        use_cache=False          # Disable cache during training to save memory
+        use_cache=False,         # Disable cache during training to save memory
+        load_in_8bit=True,       # Use 8-bit to reduce memory usage
+        load_in_4bit=False,      # Keep 8-bit for training compatibility
     )
     
-    # 3. Setup tokenizer
-    print("\n🔤 Step 3: Setting up specialized tokenizer...")
-    tech_tokenizer = TechnicalInterviewTokenizer(model_name)
+    # 3. Setup tokenizer (WITHOUT adding special tokens to save memory)
+    print("\n🔤 Step 3: Setting up tokenizer (memory-optimized)...")
+    print("⚠️ Skipping special token addition to prevent CUDA OOM")
     
-    # Resize model embeddings to accommodate new tokens
-    base_model.resize_token_embeddings(len(tech_tokenizer.tokenizer))
+    # Create simplified tokenizer without token resize
+    tech_tokenizer = TechnicalInterviewTokenizer.__new__(TechnicalInterviewTokenizer)
+    tech_tokenizer.model_name = model_name
+    tech_tokenizer.tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    # Set pad token if not exists (without adding new tokens)
+    if tech_tokenizer.tokenizer.pad_token is None:
+        tech_tokenizer.tokenizer.pad_token = tech_tokenizer.tokenizer.eos_token
+    
+    print("✅ Using base tokenizer without special tokens (memory-safe)")
     
     # 4. Create datasets
     print("\n📊 Step 4: Creating datasets...")
@@ -368,8 +395,12 @@ def setup_technical_interview_training(
         max_length=max_length
     )
     
-    # 5. Apply LoRA
-    print("\n⚡ Step 5: Applying LoRA...")
+    # 5. Prepare model for 8-bit training
+    print("\n⚡ Step 5: Preparing model for quantized training...")
+    base_model = prepare_model_for_kbit_training(base_model)
+    
+    # 6. Apply LoRA
+    print("\n🔧 Step 6: Applying LoRA...")
     
     # Determine target modules based on model architecture
     if "codellama" in model_name.lower() or "llama" in model_name.lower():
@@ -380,11 +411,11 @@ def setup_technical_interview_training(
         target_modules = ["c_attn", "c_proj", "c_fc"]
     
     lora_setup = TechnicalInterviewLoRA(base_model, target_modules=target_modules)
-    lora_config = lora_setup.create_config(rank=16, alpha=32, dropout=0.1)  # Optimized for Colab
+    lora_config = lora_setup.create_config(rank=8, alpha=16, dropout=0.1)  # Smaller rank for 8-bit training
     model = lora_setup.apply_lora(lora_config)
     
-    # 6. Setup trainer with progress tracking
-    print("\n🏋️ Step 6: Setting up trainer with progress tracking...")
+    # 7. Setup trainer with progress tracking
+    print("\n🏋️ Step 7: Setting up trainer with progress tracking...")
     trainer_setup = TechnicalInterviewTrainer(
         model, tech_tokenizer, train_dataset, eval_dataset
     )
