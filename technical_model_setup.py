@@ -244,7 +244,7 @@ class TechnicalInterviewTrainer:
             # Logging and evaluation
             logging_dir='./logs',
             logging_steps=50,
-            evaluation_strategy="steps",
+            eval_strategy="steps",
             eval_steps=200,
             save_steps=500,
             
