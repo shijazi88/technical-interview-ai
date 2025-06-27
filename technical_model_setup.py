@@ -16,7 +16,7 @@ import os
 class TechnicalInterviewTokenizer:
     """Specialized tokenizer setup for technical interviews"""
     
-    def __init__(self, model_name: str = "microsoft/DialoGPT-medium"):
+    def __init__(self, model_name: str = "codellama/CodeLlama-7b-Instruct-hf"):
         self.model_name = model_name
         print(f"Loading tokenizer: {model_name}")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -283,8 +283,8 @@ class TechnicalInterviewTrainer:
 
 def setup_technical_interview_training(
     num_scenarios: int = 100, 
-    model_name: str = "microsoft/DialoGPT-small",
-    max_length: int = 1024
+    model_name: str = "codellama/CodeLlama-7b-Instruct-hf",
+    max_length: int = 512
 ):
     """
     Complete setup for technical interview model training
@@ -292,8 +292,8 @@ def setup_technical_interview_training(
     
     Args:
         num_scenarios: Number of training scenarios to generate
-        model_name: Base model to use (e.g., "codellama/CodeLlama-7b-Instruct-hf")
-        max_length: Maximum sequence length for training
+        model_name: Base model to use (default: "codellama/CodeLlama-7b-Instruct-hf")
+        max_length: Maximum sequence length for training (default: 512 for 7B models)
     """
     
     print("🚀 Setting up technical interview training for Google Colab Pro...")
@@ -329,7 +329,9 @@ def setup_technical_interview_training(
         model_name,
         torch_dtype=torch.float16,
         device_map="auto",
-        trust_remote_code=True
+        trust_remote_code=True,
+        low_cpu_mem_usage=True,  # More efficient loading for large models
+        use_cache=False          # Disable cache during training to save memory
     )
     
     # 3. Setup tokenizer

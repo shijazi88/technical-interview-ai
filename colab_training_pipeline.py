@@ -48,13 +48,13 @@ def main():
     """Main training pipeline optimized for Google Colab Pro"""
     
     parser = argparse.ArgumentParser(description="Train Technical Interview LLM on Google Colab")
-    parser.add_argument("--model_name", type=str, default="microsoft/DialoGPT-small", help="Base model to use")
+    parser.add_argument("--model_name", type=str, default="codellama/CodeLlama-7b-Instruct-hf", help="Base model to use")
     parser.add_argument("--num_scenarios", type=int, default=150, help="Number of training scenarios")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=1, help="Training batch size (keep small for Colab)")
-    parser.add_argument("--learning_rate", type=float, default=2e-4, help="Learning rate")
+    parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate (reduced for larger model)")
     parser.add_argument("--warmup_steps", type=int, default=100, help="Number of warmup steps")
-    parser.add_argument("--max_length", type=int, default=1024, help="Maximum sequence length")
+    parser.add_argument("--max_length", type=int, default=512, help="Maximum sequence length (reduced for 7B model)")
     parser.add_argument("--output_dir", type=str, default="./technical_interview_model", help="Output directory")
     parser.add_argument("--install_deps", action="store_true", help="Install dependencies first")
     
