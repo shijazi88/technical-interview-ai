@@ -1,0 +1,15 @@
+# Virtual environments
+colab_env/
+venv/
+env/
+
+# Model files (too large)
+*.bin
+*.safetensors
+technical_interview_model/
+
+# Temporary files
+.DS_Store
+*.tmp
+*.log
+colab_project.zip
