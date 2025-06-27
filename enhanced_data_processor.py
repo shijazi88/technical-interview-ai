@@ -101,17 +101,73 @@ class TechnicalInterviewDataset:
         """Create complete interview scenarios with multiple exchanges"""
         scenarios = []
         
-        print(f"Generating {num_scenarios} realistic interview scenarios...")
+        print(f"🎯 Generating {num_scenarios} realistic interview scenarios...")
+        print("📊 Progress tracking enabled - you'll see time per scenario")
+        print("=" * 60)
+        
+        import time
+        start_time = time.time()
+        scenario_times = []
         
         for i in range(num_scenarios):
-            if (i + 1) % 20 == 0:
-                print(f"Generated {i + 1}/{num_scenarios} scenarios...")
+            scenario_start = time.time()
             
+            # Generate the scenario
             scenario = self._generate_single_interview()
             scenarios.extend(scenario)
+            
+            # Calculate timing
+            scenario_time = time.time() - scenario_start
+            scenario_times.append(scenario_time)
+            
+            # Progress reporting
+            progress_pct = ((i + 1) / num_scenarios) * 100
+            elapsed_total = time.time() - start_time
+            
+            # Estimate remaining time
+            if len(scenario_times) >= 3:
+                avg_time_per_scenario = sum(scenario_times[-5:]) / len(scenario_times[-5:])  # Use last 5 for better estimate
+                remaining_scenarios = num_scenarios - (i + 1)
+                estimated_remaining = remaining_scenarios * avg_time_per_scenario
+                remaining_str = self._format_time(estimated_remaining)
+                eta_str = self._format_time(elapsed_total + estimated_remaining)
+            else:
+                remaining_str = "Calculating..."
+                eta_str = "Calculating..."
+            
+            # Show progress every scenario (first 10) then every 5 scenarios
+            if i < 10 or (i + 1) % 5 == 0 or (i + 1) == num_scenarios:
+                examples_in_scenario = len(scenario)
+                print(f"✅ Scenario {i + 1:3d}/{num_scenarios} ({progress_pct:5.1f}%) | "
+                      f"⏱️ {scenario_time:4.1f}s | "
+                      f"📝 {examples_in_scenario} examples | "
+                      f"⏳ Remaining: {remaining_str} | "
+                      f"🎯 Total ETA: {eta_str}")
         
-        print(f"✅ Generated {len(scenarios)} total training examples")
+        total_time = time.time() - start_time
+        avg_scenario_time = sum(scenario_times) / len(scenario_times)
+        
+        print("=" * 60)
+        print(f"🎉 Data Generation Complete!")
+        print(f"📊 Generated {len(scenarios)} total training examples from {num_scenarios} scenarios")
+        print(f"⏱️ Total time: {self._format_time(total_time)}")
+        print(f"📈 Average per scenario: {avg_scenario_time:.1f}s")
+        print(f"🚀 Ready for model training!")
+        
         return scenarios
+    
+    def _format_time(self, seconds: float) -> str:
+        """Format time in human readable format"""
+        if seconds < 60:
+            return f"{int(seconds)}s"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            secs = int(seconds % 60)
+            return f"{minutes}m {secs}s"
+        else:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            return f"{hours}h {minutes}m"
     
     def _generate_single_interview(self) -> List[Dict]:
         """Generate a complete interview with 5-8 questions"""

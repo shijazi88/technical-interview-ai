@@ -12,6 +12,7 @@ import json
 from typing import Dict, List
 import gc
 import os
+from training_progress_tracker import TrainingProgressTracker, ProgressTrainerCallback
 
 class TechnicalInterviewTokenizer:
     """Specialized tokenizer setup for technical interviews"""
@@ -261,7 +262,7 @@ class TechnicalInterviewTrainer:
         
         return training_args
     
-    def create_trainer(self, training_args):
+    def create_trainer(self, training_args, progress_tracker=None):
         """Create Hugging Face trainer with custom settings"""
         
         # Data collator for causal language modeling
@@ -270,6 +271,11 @@ class TechnicalInterviewTrainer:
             mlm=False,  # Causal LM, not masked LM
         )
         
+        # Prepare callbacks
+        callbacks = []
+        if progress_tracker:
+            callbacks.append(ProgressTrainerCallback(progress_tracker))
+        
         trainer = Trainer(
             model=self.model,
             args=training_args,
@@ -277,6 +283,7 @@ class TechnicalInterviewTrainer:
             eval_dataset=self.eval_dataset,
             tokenizer=self.tokenizer.tokenizer,
             data_collator=data_collator,
+            callbacks=callbacks,
         )
         
         return trainer
@@ -376,16 +383,27 @@ def setup_technical_interview_training(
     lora_config = lora_setup.create_config(rank=16, alpha=32, dropout=0.1)  # Optimized for Colab
     model = lora_setup.apply_lora(lora_config)
     
-    # 6. Setup trainer
-    print("\n🏋️ Step 6: Setting up trainer...")
+    # 6. Setup trainer with progress tracking
+    print("\n🏋️ Step 6: Setting up trainer with progress tracking...")
     trainer_setup = TechnicalInterviewTrainer(
         model, tech_tokenizer, train_dataset, eval_dataset
     )
     
     training_args = trainer_setup.create_training_arguments()
-    trainer = trainer_setup.create_trainer(training_args)
     
-    print("✅ Setup complete! Ready to start training.")
+    # Calculate total training steps for progress tracking
+    steps_per_epoch = len(train_dataset) // training_args.per_device_train_batch_size
+    if training_args.gradient_accumulation_steps > 1:
+        steps_per_epoch = steps_per_epoch // training_args.gradient_accumulation_steps
+    total_steps = steps_per_epoch * training_args.num_train_epochs
+    
+    # Create progress tracker
+    progress_tracker = TrainingProgressTracker(total_steps=total_steps)
+    
+    # Create trainer with progress tracking
+    trainer = trainer_setup.create_trainer(training_args, progress_tracker)
+    
+    print("✅ Setup complete! Ready to start training with real-time progress.")
     
     # Memory check
     if torch.cuda.is_available():
