@@ -69,7 +69,7 @@ def start_watching():
     # Check if git is set up
     if not os.path.exists('.git'):
         print("❌ No git repository found!")
-        print("Run: git init && git remote add origin YOUR_REPO_URL")
+        print("Run: git init && git remote add origin https://github.com/shijazi88/technical-interview-ai")
         return
     
     event_handler = AutoSyncHandler()

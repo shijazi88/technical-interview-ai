@@ -298,7 +298,7 @@ After training your model:
 **Ready to build your AI interviewer? Let's get started! 🚀**
 
 ```bash
-git clone [repository-url]
+git clone https://github.com/shijazi88/technical-interview-ai
 cd technical-interview-ai
 python colab_training_pipeline.py
 ```

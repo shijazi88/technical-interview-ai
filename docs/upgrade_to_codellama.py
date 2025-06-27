@@ -74,7 +74,7 @@ def update_colab_notebook():
                 "outputs": [],
                 "source": [
                     "# 🔄 Get latest code from GitHub\n",
-                    "REPO_URL = 'https://github.com/YOUR_USERNAME/technical-interview-ai'\n",
+                                         "REPO_URL = 'https://github.com/shijazi88/technical-interview-ai'\n",
                     "PROJECT_DIR = 'interview-ai'\n",
                     "\n",
                     "import os\n",

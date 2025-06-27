@@ -50,7 +50,7 @@ colab_project.zip
                     "3. 🚀 Pull changes in Colab (1 click)\n",
                     "4. 🔥 Train on GPU!\n",
                     "\n",
-                    "Replace `YOUR_REPO_URL` with your GitHub repository URL."
+                    "GitHub repository URL: https://github.com/shijazi88/technical-interview-ai"
                 ]
             },
             {
@@ -60,7 +60,7 @@ colab_project.zip
                 "outputs": [],
                 "source": [
                     "# 🔄 QUICK SYNC: Get latest changes from Cursor (30 seconds old max!)\n",
-                    "REPO_URL = 'https://github.com/YOUR_USERNAME/YOUR_REPO'  # Update this!\n",
+                                             "REPO_URL = 'https://github.com/shijazi88/technical-interview-ai'\n",
                     "PROJECT_DIR = 'interview-ai'\n",
                     "\n",
                     "import os\n",
@@ -186,7 +186,7 @@ def main():
     
     print("\n📋 RECOMMENDED SETUP (GitHub):")
     print("1. Create GitHub repository")
-    print("2. git remote add origin YOUR_REPO_URL")
+    print("2. git remote add origin https://github.com/shijazi88/technical-interview-ai")
     print("3. git push -u origin main")
     print("4. Edit in Cursor, run ./quick_sync.sh")
     print("5. In Colab: !git pull origin main")

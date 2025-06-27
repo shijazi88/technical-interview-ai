@@ -83,7 +83,7 @@ trained_interview_ai.zip
                         "3. 🚀 Pull latest changes in Colab\n",
                         "4. 🔥 Train on GPU!\n",
                         "\n",
-                        "**GitHub Repository:** YOUR_REPO_URL_HERE"
+                        "**GitHub Repository:** https://github.com/shijazi88/technical-interview-ai"
                     ]
                 },
                 {
@@ -96,7 +96,7 @@ trained_interview_ai.zip
                         "import os\n",
                         "import subprocess\n",
                         "\n",
-                        "REPO_URL = 'YOUR_REPO_URL_HERE'  # Replace with your GitHub repo\n",
+                        "REPO_URL = 'https://github.com/shijazi88/technical-interview-ai'\n",
                         "PROJECT_DIR = 'technical-interview-ai'\n",
                         "\n",
                         "if os.path.exists(PROJECT_DIR):\n",
@@ -300,7 +300,7 @@ def setup_github_workflow():
     print()
     print("📋 SETUP STEPS:")
     print("1. Create GitHub repository")
-    print("2. Add remote: git remote add origin YOUR_REPO_URL")
+    print("2. Add remote: git remote add origin https://github.com/shijazi88/technical-interview-ai")
     print("3. Push initial code: git push -u origin main")
     print("4. Start file watcher: python github_auto_sync.py --watch")
     print("5. Use GitHub_Colab_Training.ipynb in Colab")
