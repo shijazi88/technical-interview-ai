@@ -246,7 +246,7 @@ class TechnicalInterviewTrainer:
             logging_steps=50,
             eval_strategy="steps",
             eval_steps=200,
-            save_steps=500,
+            save_steps=200,
             
             # Model management
             save_total_limit=2,                    # Keep only best models
