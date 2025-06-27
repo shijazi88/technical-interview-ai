@@ -48,10 +48,13 @@ def main():
     """Main training pipeline optimized for Google Colab Pro"""
     
     parser = argparse.ArgumentParser(description="Train Technical Interview LLM on Google Colab")
+    parser.add_argument("--model_name", type=str, default="microsoft/DialoGPT-small", help="Base model to use")
     parser.add_argument("--num_scenarios", type=int, default=150, help="Number of training scenarios")
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=1, help="Training batch size (keep small for Colab)")
-    parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate")
+    parser.add_argument("--learning_rate", type=float, default=2e-4, help="Learning rate")
+    parser.add_argument("--warmup_steps", type=int, default=100, help="Number of warmup steps")
+    parser.add_argument("--max_length", type=int, default=1024, help="Maximum sequence length")
     parser.add_argument("--output_dir", type=str, default="./technical_interview_model", help="Output directory")
     parser.add_argument("--install_deps", action="store_true", help="Install dependencies first")
     
@@ -60,10 +63,13 @@ def main():
     print("🚀 Technical Interview LLM Training Pipeline for Google Colab Pro")
     print("="*70)
     print(f"Configuration:")
+    print(f"  - Base model: {args.model_name}")
     print(f"  - Training scenarios: {args.num_scenarios}")
     print(f"  - Epochs: {args.epochs}")
     print(f"  - Batch size: {args.batch_size}")
     print(f"  - Learning rate: {args.learning_rate}")
+    print(f"  - Warmup steps: {args.warmup_steps}")
+    print(f"  - Max length: {args.max_length}")
     print(f"  - Output directory: {args.output_dir}")
     print("="*70)
     
@@ -98,12 +104,17 @@ def main():
         print("\n🤖 Step 4: Setting up model and training...")
         from technical_model_setup import setup_technical_interview_training
         
-        trainer, tokenizer = setup_technical_interview_training(num_scenarios=len(training_data))
+        trainer, tokenizer = setup_technical_interview_training(
+            num_scenarios=len(training_data),
+            model_name=args.model_name,
+            max_length=args.max_length
+        )
         
         # Update training arguments for user preferences
         trainer.args.num_train_epochs = args.epochs
         trainer.args.per_device_train_batch_size = args.batch_size
         trainer.args.learning_rate = args.learning_rate
+        trainer.args.warmup_steps = args.warmup_steps
         trainer.args.output_dir = args.output_dir
         
         print("✅ Model and trainer setup complete")
@@ -367,7 +378,7 @@ This directory contains your trained technical interview AI model.
 ## Training Details:
 - Training scenarios: {args.num_scenarios}
 - Training epochs: {args.epochs}
-- Base model: microsoft/DialoGPT-small
+- Base model: {args.model_name}
 - Fine-tuning method: LoRA (Low-Rank Adaptation)
 - Training date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 

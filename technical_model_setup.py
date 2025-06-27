@@ -54,7 +54,10 @@ class TechnicalInterviewTokenizer:
         
         # Set pad token if not exists
         if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
+            if hasattr(self.tokenizer, 'pad_token_id') and self.tokenizer.pad_token_id is not None:
+                self.tokenizer.pad_token = self.tokenizer.convert_ids_to_tokens(self.tokenizer.pad_token_id)
+            else:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
     
     def create_interview_prompt(self, 
                                question: str,
@@ -278,19 +281,31 @@ class TechnicalInterviewTrainer:
         
         return trainer
 
-def setup_technical_interview_training(num_scenarios: int = 100):
+def setup_technical_interview_training(
+    num_scenarios: int = 100, 
+    model_name: str = "microsoft/DialoGPT-small",
+    max_length: int = 1024
+):
     """
     Complete setup for technical interview model training
     Optimized for Google Colab Pro
+    
+    Args:
+        num_scenarios: Number of training scenarios to generate
+        model_name: Base model to use (e.g., "codellama/CodeLlama-7b-Instruct-hf")
+        max_length: Maximum sequence length for training
     """
     
     print("🚀 Setting up technical interview training for Google Colab Pro...")
+    print(f"📊 Base model: {model_name}")
+    print(f"🎯 Training scenarios: {num_scenarios}")
+    print(f"📏 Max length: {max_length}")
     
     # Clear GPU memory
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         gc.collect()
-        print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+        print(f"💾 GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
     
     # 1. Generate training data first
     print("\n📚 Step 1: Generating training data...")
@@ -308,9 +323,7 @@ def setup_technical_interview_training(num_scenarios: int = 100):
     
     print(f"✅ Generated {len(training_data)} training examples")
     
-    # 2. Load base model (smaller model for Colab)
-    model_name = "microsoft/DialoGPT-small"  # Smaller model for Colab
-    
+    # 2. Load base model
     print(f"\n🤖 Step 2: Loading base model: {model_name}")
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
@@ -331,7 +344,7 @@ def setup_technical_interview_training(num_scenarios: int = 100):
     train_dataset = TechnicalInterviewDataset(
         training_file, 
         tech_tokenizer,
-        max_length=256  # Reduced for memory efficiency
+        max_length=max_length
     )
     
     # Create smaller eval dataset for faster evaluation
@@ -343,13 +356,22 @@ def setup_technical_interview_training(num_scenarios: int = 100):
     eval_dataset = TechnicalInterviewDataset(
         eval_file, 
         tech_tokenizer,
-        max_length=256
+        max_length=max_length
     )
     
     # 5. Apply LoRA
     print("\n⚡ Step 5: Applying LoRA...")
-    lora_setup = TechnicalInterviewLoRA(base_model)
-    lora_config = lora_setup.create_config(rank=16, alpha=32, dropout=0.1)  # Smaller rank for Colab
+    
+    # Determine target modules based on model architecture
+    if "codellama" in model_name.lower() or "llama" in model_name.lower():
+        target_modules = ["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    elif "mistral" in model_name.lower():
+        target_modules = ["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    else:  # DialoGPT and other GPT-style models
+        target_modules = ["c_attn", "c_proj", "c_fc"]
+    
+    lora_setup = TechnicalInterviewLoRA(base_model, target_modules=target_modules)
+    lora_config = lora_setup.create_config(rank=16, alpha=32, dropout=0.1)  # Optimized for Colab
     model = lora_setup.apply_lora(lora_config)
     
     # 6. Setup trainer

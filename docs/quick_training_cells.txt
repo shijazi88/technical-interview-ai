@@ -1,0 +1,9 @@
+
+# 🚀 QUICK TRAINING CELL (10-15 minutes)
+!python colab_training_pipeline.py --num_scenarios 50 --epochs 2 --batch_size 2 --learning_rate 3e-4
+
+# ⚡ ULTRA-QUICK TRAINING CELL (5-8 minutes - for testing)
+# !python colab_training_pipeline.py --num_scenarios 25 --epochs 1 --batch_size 4 --learning_rate 5e-4
+
+# 🐌 FULL TRAINING CELL (30-45 minutes - best quality)
+# !python colab_training_pipeline.py --num_scenarios 150 --epochs 3
