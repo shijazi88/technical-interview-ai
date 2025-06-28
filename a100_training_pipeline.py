@@ -71,6 +71,10 @@ def mount_google_drive():
     except ImportError:
         print("⚠️ Google Drive mounting only available in Colab")
         return None
+    except Exception as e:
+        print(f"⚠️ Google Drive mounting failed: {e}")
+        print("💡 Continuing without Drive backup - you can download model manually")
+        return None
 
 def install_a100_requirements():
     """Install packages optimized for A100 training"""
@@ -247,10 +251,13 @@ def main():
         install_a100_requirements()
         setup_a100_environment()
         
-        # Step 1: Mount Google Drive for persistence
+        # Step 1: Mount Google Drive for persistence (optional)
         backup_dir = None
         if args.backup_to_drive:
             backup_dir = mount_google_drive()
+            if backup_dir is None:
+                print("⚠️ Drive backup disabled - continuing with training")
+                print("💡 You can download the model manually after training")
         
         # Step 2: Create questions database
         print("\n📚 Step 2: Creating technical questions database...")
@@ -330,6 +337,7 @@ def main():
         tokenizer.tokenizer.save_pretrained(args.output_dir)
         
         # Step 7: Create persistent backups
+        print("\n💾 Step 7: Creating model backups...")
         save_model_persistently(
             model_dir=args.output_dir,
             backup_dir=backup_dir,
