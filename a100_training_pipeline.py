@@ -78,24 +78,44 @@ def mount_google_drive():
 
 def install_a100_requirements():
     """Install packages optimized for A100 training"""
-    packages = [
+    # Core packages (required)
+    core_packages = [
         "transformers>=4.35.0",
         "peft>=0.6.0", 
         "accelerate>=0.24.0",
         "bitsandbytes>=0.41.0",
         "datasets>=2.14.0",
         "torch>=2.1.0",
-        "flash-attn>=2.3.0",  # A100 supports FlashAttention
-        "huggingface_hub>=0.17.0"  # For model uploading
+        "huggingface_hub>=0.17.0"
+    ]
+    
+    # Optional packages (may have compatibility issues)
+    optional_packages = [
+        "flash-attn>=2.3.0"  # A100 supports FlashAttention but may have version conflicts
     ]
     
     print("📦 Installing A100-optimized packages...")
-    for package in packages:
+    
+    # Install core packages
+    for package in core_packages:
         try:
             os.system(f"pip install {package}")
-        except:
-            print(f"⚠️ Failed to install {package}, continuing...")
-    print("✅ Packages installed!")
+        except Exception as e:
+            print(f"⚠️ Failed to install {package}: {e}")
+    
+    # Install optional packages with error handling
+    for package in optional_packages:
+        try:
+            print(f"🔧 Attempting to install optional package: {package}")
+            result = os.system(f"pip install {package}")
+            if result == 0:
+                print(f"✅ Successfully installed {package}")
+            else:
+                print(f"⚠️ Optional package {package} failed - continuing without it")
+        except Exception as e:
+            print(f"⚠️ Skipping {package} due to compatibility issues: {e}")
+    
+    print("✅ Core packages installed! Optional packages may be skipped for compatibility.")
 
 def save_model_persistently(model_dir, backup_dir=None, upload_to_hf=False, hf_repo_name=None):
     """Save model with multiple backup strategies"""
@@ -212,8 +232,8 @@ def main():
                        help="Max sequence length (increased for A100)")
     parser.add_argument("--output_dir", type=str, default="./technical_interview_model", 
                        help="Output directory")
-    parser.add_argument("--use_flash_attention", action="store_true", default=True,
-                       help="Use FlashAttention (A100 optimized)")
+    parser.add_argument("--use_flash_attention", action="store_true", default=False,
+                       help="Use FlashAttention (A100 optimized, may have compatibility issues)")
     parser.add_argument("--use_bfloat16", action="store_true", default=True,
                        help="Use bfloat16 precision (A100 feature)")
     parser.add_argument("--backup_to_drive", action="store_true", default=True,
